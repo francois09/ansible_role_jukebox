@@ -1,0 +1,17 @@
+---
+# Default do nothing
+jukebox__install: False
+jukebox__configure: False
+jukebox__headless: False
+
+# defaults file for jukebox
+jukebox__headless_default_packages:
+  - mopidy
+  - mopidy-tunein
+  - python3-pip
+  - python3-virtualenv
+
+jukebox__default_packages:
+  - unclutter
+  - lxde
+  - chromium

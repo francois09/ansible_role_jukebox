@@ -1,0 +1,15 @@
+---
+# Jukebox handlers
+- name: Restart mopidy
+  service:
+    name: mopidy
+    state: restarted
+
+- name: Rescan mopidy
+  shell:
+    cmd: "mopidyctl local scan"
+
+# - name: Reload mopidy (reload not allowed)
+#   service:
+#     name: mopidy
+#     state: reloaded

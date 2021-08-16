@@ -1,0 +1,195 @@
+---
+# Based on:
+# - https://magpi.raspberrypi.org/articles/make-a-raspberry-pi-audio-player-with-mopidy-music
+# - https://magpi.raspberrypi.org/articles/build-a-home-music-system-with-raspberry-pi
+# And can be augmented with:
+# - https://magpi.raspberrypi.org/articles/build-a-multi-room-audio-system-with-raspberry-pi
+
+- name: Setup screen orientation /boot/config.txt
+  lineinfile:
+    path: /boot/config.txt
+    regexp: "^ *#?lcd_rotate"
+    line: "lcd_rotate=2"
+  when:
+    - jukebox__configure
+    - not jukebox__headless
+
+# Create powermgmt off service
+- name: Create power management systemd service file
+  copy:
+    src: wifi-power-mgmt.service
+    dest: /etc/systemd/system/wifi-power-mgmt.service
+  register: powermgmt_service
+  when:
+    - jukebox__configure
+
+- name: Start power-management service if created
+  service:
+    name: wifi-power-mgmt.service
+    state: restarted
+  when: powermgmt_service is changed
+
+- name: Cancel splash rainbow /boot/config.txt
+  lineinfile:
+    path: /boot/config.txt
+    regexp: "^ *#?disable_splash"
+    line: "disable_splash=1"
+  when:
+    - jukebox__configure
+    - not jukebox__headless
+  
+# - name: Change tty for boot-log
+#   shell:
+#     cmd: "sed -i -e 's/console=tty1/console=tty3/' /boot/cmdline.txt"
+#   when: jukebox__configure
+
+- name: Add mopidy apt key
+  apt_key:
+    url: https://apt.mopidy.com/mopidy.gpg
+    state: present
+  when: jukebox__install
+
+- name: Add mopidy repository
+  apt_repository:
+    filename: mopidy
+    repo: deb https://apt.mopidy.com/ buster main contrib non-free
+    update_cache: false
+    state: present
+  when: jukebox__install
+
+- name: Update repo now
+  apt:
+    update_cache: true
+  when: jukebox__install
+
+- name: Jukebox install common packages
+  apt:
+    name: "{{ jukebox__headless_default_packages }}"
+    update_cache: yes
+    state: present
+  when:
+    - jukebox__configure
+
+- name: Jukebox install non headless packages
+  apt:
+    name: "{{ jukebox__default_packages }}"
+    update_cache: yes
+    state: present
+  when:
+    - jukebox__configure
+    - not jukebox__headless
+
+- name: Video group membership for user mopidy
+  user:
+    name: mopidy
+    groups: video
+    append: yes
+  when: jukebox__install
+  notify: Restart mopidy
+
+- name: Enable mopidy service
+  service:
+    name: mopidy
+    enabled: yes
+  when: jukebox__configure
+  notify: Restart mopidy
+
+- name: Configure mopidy
+  template:
+    src: mopidy.conf
+    dest: /etc/mopidy/mopidy.conf
+  when: jukebox__configure
+  notify:
+    - Restart mopidy
+    - Rescan mopidy
+
+- name: Install some mopidy plugins
+  pip:
+    name:
+      - Mopidy-Iris
+      - Mopidy-Local
+      - Mopidy-RadioNet
+      - Mopidy-SomaFM
+      # - Mopidy-Podcast
+      # - Mopidy-Podcast-iTunes
+      # - Mopidy-SoundCloud # Need conf: https://mopidy.com/ext/soundcloud
+      # - Mopidy-YouTube # Need conf [youtube] enabled = true
+      # - Mopidy-InternetArchive
+      # - Mopidy-Party # For sharing access to friends
+  when:
+    - jukebox__install
+    - jukebox__bug_fixed is defined
+
+- name: Install some mopidy non headless plugins
+  pip:
+    name:
+      - Mopidy-Iris
+  when:
+    - jukebox__install
+    - not jukebox__headless
+    - jukebox__bug_fixed is defined
+
+- name: Update sudoer mechanism for mopidy
+  template:
+    src: sudomopidy
+    dest: /etc/sudoers.d/02-sudo-mopidy
+    validate: 'visudo -cf %s'
+  when: jukebox__install
+  notify: Restart mopidy
+
+- name: Setup kiosk script
+  template:
+    src: kiosk.sh
+    dest: /home/francois/kiosk.sh
+    owner: francois
+    group: francois
+    mode: 0755
+  when:
+    - jukebox__configure
+    - not jukebox__headless
+
+- name: Configure user autologin
+  lineinfile:
+    path: /etc/lightdm/lightdm.conf
+    regexp: "^#autologin-user="
+    line: "autologin-user=francois"
+  when:
+    - jukebox__configure
+    - not jukebox__headless
+  # notify: Restart musicbox
+
+- name: Configure user autologin timeout
+  lineinfile:
+    path: /etc/lightdm/lightdm.conf
+    regexp: "^#autologin-user-timeout="
+    line: "autologin-user-timeout=0"
+  when:
+    - jukebox__configure
+    - not jukebox__headless
+  # notify: Restart musicbox
+
+# TODO: Should manage (/etc/xdg|~/.config)/lxsession/LXDE/autostart - Contains normally:
+# @lxpanel --profile LXDE
+# @pcmanfm --desktop --profile LXDE
+# @xscreensaver -no-splash
+
+# TODO: Should manage ~/.config/autostart/kioskmode.desktop - should contain
+# [Desktop Entry]
+# Type=Application
+# Exec=/home/francois/kiosk.sh
+
+- name: PulseAudio TCP setup
+  lineinfile:
+    path: /etc/pulse/default.pa
+    regexp: "^#load-module module-native-protocol-tcp"
+    line: "load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1"
+  when: jukebox__configure
+  # notify: Restart musicbox
+
+- name: PulseAudio unload suspend-on-idle on setup
+  lineinfile:
+    path: /etc/pulse/default.pa
+    regexp: "^load-module module-suspend-on-idle"
+    line: "#load-module module-suspend-on-idle"
+  when: jukebox__configure
+  # notify: Restart musicbox

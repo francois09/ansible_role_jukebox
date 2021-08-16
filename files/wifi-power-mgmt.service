@@ -1,0 +1,13 @@
+[Unit]
+Description=Disable WiFi Power Management
+Requires=network-online.target
+After=hostapd.service
+
+[Service]
+User=root
+Group=root
+Type=oneshot
+ExecStart=/sbin/iw dev wlan0 set power_save off
+
+[Install]
+WantedBy=multi-user.target
