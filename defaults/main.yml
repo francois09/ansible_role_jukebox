@@ -10,6 +10,7 @@ jukebox__headless_default_packages:
   - mopidy-tunein
   - python3-pip
   - python3-virtualenv
+  - jq
 
 jukebox__default_packages:
   - unclutter
