@@ -1,0 +1,11 @@
+[Unit]
+Description=Mopidy autoplay music
+After=mopidy.service
+
+[Service]
+User={{ jukebox__default_user }}
+PermissionsStartOnly=true
+ExecStart=/home/{{ jukebox__default_user }}/autoplay.sh
+
+[Install]
+WantedBy=multi-user.target
