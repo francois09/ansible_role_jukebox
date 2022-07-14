@@ -23,6 +23,16 @@
   when:
     - jukebox__configure
 
+# Create autoplay service
+- name: Create autoplay systemd service file
+  template:
+    src: autoplay.service
+    dest: /etc/systemd/system/autoplay.service
+  register: autoplay_service
+  when:
+    - jukebox__configure
+    - jukebox__headless
+
 - name: Start power-management service if created
   service:
     name: wifi-power-mgmt.service
@@ -140,19 +150,30 @@
 - name: Setup kiosk script
   template:
     src: kiosk.sh
-    dest: /home/francois/kiosk.sh
-    owner: francois
-    group: francois
+    dest: "/home/{{ jukebox__default_user }}/kiosk.sh"
+    owner: "{{ jukebox__default_user }}"
+    group: "{{ jukebox__default_user }}"
     mode: 0755
   when:
     - jukebox__configure
     - not jukebox__headless
 
+- name: Setup autoplay script
+  template:
+    src: autoplay.sh
+    dest: "/home/{{ jukebox__default_user }}/autoplay.sh"
+    owner: "{{ jukebox__default_user }}"
+    group: "{{ jukebox__default_user }}"
+    mode: 0755
+  when:
+    - jukebox__configure
+    - jukebox__headless
+
 - name: Configure user autologin
   lineinfile:
     path: /etc/lightdm/lightdm.conf
     regexp: "^#autologin-user="
-    line: "autologin-user=francois"
+    line: "autologin-user={{ jukebox__default_user }}"
   when:
     - jukebox__configure
     - not jukebox__headless
@@ -178,12 +199,20 @@
 # Type=Application
 # Exec=/home/francois/kiosk.sh
 
+- name: Start autoplay service if created
+  service:
+    name: autoplay.service
+    state: restarted
+  when: autoplay_service is changed
+
 - name: PulseAudio TCP setup
   lineinfile:
     path: /etc/pulse/default.pa
     regexp: "^#load-module module-native-protocol-tcp"
     line: "load-module module-native-protocol-tcp auth-ip-acl=127.0.0.1"
-  when: jukebox__configure
+  when:
+    - jukebox__configure
+    # - not jukebox__headless
   # notify: Restart musicbox
 
 - name: PulseAudio unload suspend-on-idle on setup
@@ -191,5 +220,7 @@
     path: /etc/pulse/default.pa
     regexp: "^load-module module-suspend-on-idle"
     line: "#load-module module-suspend-on-idle"
-  when: jukebox__configure
+  when:
+    - jukebox__configure
+    # - not jukebox__headless
   # notify: Restart musicbox

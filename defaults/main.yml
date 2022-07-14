@@ -11,8 +11,13 @@ jukebox__headless_default_packages:
   - python3-pip
   - python3-virtualenv
   - jq
+  - pulseaudio
 
 jukebox__default_packages:
   - unclutter
   - lxde
   - chromium
+
+jukebox__default_user: pi
+jukebox__initial_volume: 50
+jukebox__initial_tracks_count: 40
