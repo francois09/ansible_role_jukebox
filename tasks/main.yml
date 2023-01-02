@@ -31,7 +31,24 @@
   register: autoplay_service
   when:
     - jukebox__configure
-    - jukebox__headless
+
+# Create checkplaylist service
+- name: Create checkplaylist systemd service file
+  template:
+    src: checkplaylist.service
+    dest: /etc/systemd/system/checkplaylist.service
+  register: checkplaylist_service
+  when:
+    - jukebox__configure
+
+# Create checkplaylist timer
+- name: Create checkplaylist systemd timer file
+  template:
+    src: checkplaylist.timer
+    dest: /etc/systemd/system/checkplaylist.timer
+  register: checkplaylist_timer
+  when:
+    - jukebox__configure
 
 - name: Start power-management service if created
   service:
@@ -167,7 +184,29 @@
     mode: 0755
   when:
     - jukebox__configure
-    - jukebox__headless
+    - jukebox__autoplay_random|default(False)
+
+- name: Setup addtracks script
+  template:
+    src: addtracks.sh
+    dest: "/home/{{ jukebox__default_user }}/addtracks.sh"
+    owner: "{{ jukebox__default_user }}"
+    group: "{{ jukebox__default_user }}"
+    mode: 0755
+  when:
+    - jukebox__configure
+    - jukebox__autoplay_random|default(False)
+
+- name: Setup checkplaylist script
+  template:
+    src: checkplaylist.sh
+    dest: "/home/{{ jukebox__default_user }}/checkplaylist.sh"
+    owner: "{{ jukebox__default_user }}"
+    group: "{{ jukebox__default_user }}"
+    mode: 0755
+  when:
+    - jukebox__configure
+    - jukebox__autoplay_random|default(False)
 
 - name: Configure user autologin
   lineinfile:
@@ -203,7 +242,22 @@
   service:
     name: autoplay.service
     state: restarted
+    enabled: yes
   when: autoplay_service is changed
+
+- name: Start checkplaylist service if created
+  service:
+    name: checkplaylist.service
+    state: restarted
+    enabled: yes
+  when: checkplaylist_timer is changed
+
+- name: Start checkplaylist timer if created
+  service:
+    name: checkplaylist.timer
+    state: restarted
+    enabled: yes
+  when: checkplaylist_timer is changed
 
 - name: PulseAudio TCP setup
   lineinfile:
