@@ -1,5 +1,5 @@
 [Unit]
-Description=Mopidy autoplay music
+Description=Mopidy checkplaylist music
 After=mopidy.service
 
 [Service]
