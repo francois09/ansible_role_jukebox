@@ -29,8 +29,10 @@
     src: autoplay.service
     dest: /etc/systemd/system/autoplay.service
   register: autoplay_service
+  notify: Daemon reload
   when:
     - jukebox__configure
+    - jukebox__autoplay_random|default(False)
 
 # Create checkplaylist service
 - name: Create checkplaylist systemd service file
@@ -38,8 +40,10 @@
     src: checkplaylist.service
     dest: /etc/systemd/system/checkplaylist.service
   register: checkplaylist_service
+  notify: Daemon reload
   when:
     - jukebox__configure
+    - jukebox__autoplay_random|default(False)
 
 # Create checkplaylist timer
 - name: Create checkplaylist systemd timer file
@@ -47,8 +51,10 @@
     src: checkplaylist.timer
     dest: /etc/systemd/system/checkplaylist.timer
   register: checkplaylist_timer
+  notify: Daemon reload
   when:
     - jukebox__configure
+    - jukebox__autoplay_random|default(False)
 
 - name: Start power-management service if created
   service:
@@ -82,12 +88,15 @@
     repo: deb https://apt.mopidy.com/ buster main contrib non-free
     update_cache: false
     state: present
+  register: mopidy_repo
   when: jukebox__install
 
 - name: Update repo now
   apt:
     update_cache: true
-  when: jukebox__install
+  when:
+    - jukebox__install
+    - mopidy_repo is changed
 
 - name: Jukebox install common packages
   apt:
@@ -243,21 +252,27 @@
     name: autoplay.service
     state: restarted
     enabled: yes
-  when: autoplay_service is changed
+  when:
+    - autoplay_service is changed
+    - jukebox__autoplay_random|default(False)
 
 - name: Start checkplaylist service if created
   service:
     name: checkplaylist.service
     state: restarted
     enabled: yes
-  when: checkplaylist_timer is changed
+  when:
+    - checkplaylist_timer is changed
+    - jukebox__autoplay_random|default(False)
 
 - name: Start checkplaylist timer if created
   service:
     name: checkplaylist.timer
     state: restarted
     enabled: yes
-  when: checkplaylist_timer is changed
+  when:
+    - checkplaylist_timer is changed
+    - jukebox__autoplay_random|default(False)
 
 - name: PulseAudio TCP setup
   lineinfile:
