@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eu
 {% if jukebox__autoplay_random|default(False) %}
 # Put some files for first playback
 

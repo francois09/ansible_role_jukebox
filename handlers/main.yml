@@ -9,7 +9,6 @@
   shell:
     cmd: "mopidyctl local scan"
 
-# - name: Reload mopidy (reload not allowed)
-#   service:
-#     name: mopidy
-#     state: reloaded
+- name: Daemon reload
+  service:
+    daemon_reload: true
