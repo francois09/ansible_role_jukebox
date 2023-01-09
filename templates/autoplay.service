@@ -6,6 +6,8 @@ After=mopidy.service
 User={{ jukebox__default_user }}
 PermissionsStartOnly=true
 ExecStart=/home/{{ jukebox__default_user }}/autoplay.sh
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

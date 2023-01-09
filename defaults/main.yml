@@ -21,4 +21,6 @@ jukebox__default_packages:
 jukebox__default_user: pi
 jukebox__initial_volume: 50
 jukebox__initial_tracks_count: 40
+jukebox__tracks_check_freq: 10 # minuts
+jukebox__tracks_limit: 10
 jukebox__autoplay_random: False
