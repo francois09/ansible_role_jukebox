@@ -3,4 +3,4 @@
 set -eu
 
 TRK_NUM=$(curl -s -d '{"jsonrpc": "2.0", "id": 1, "method": "core.tracklist.get_length" }' -H 'Content-Type: application/json' http://localhost:6680/mopidy/rpc|jq '.result')
-[ $TRK_NUM -lt 5 ] && /home/{{ jukebox__default_user }}/addtracks.sh
+[ -n "$TRK_NUM" ] && [ $TRK_NUM -lt {{ jukebox__tracks_limit }} ] && /home/{{ jukebox__default_user }}/addtracks.sh
