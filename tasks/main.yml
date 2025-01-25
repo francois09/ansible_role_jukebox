@@ -85,7 +85,7 @@
 - name: Add mopidy repository
   apt_repository:
     filename: mopidy
-    repo: deb https://apt.mopidy.com/ buster main contrib non-free
+    repo: deb https://apt.mopidy.com/ bullseye main contrib non-free
     update_cache: false
     state: present
   register: mopidy_repo
@@ -216,6 +216,17 @@
   when:
     - jukebox__configure
     - jukebox__autoplay_random|default(False)
+
+- name: Setup refillkey script
+  template:
+    src: refillkey.sh
+    dest: "/home/{{ jukebox__default_user }}/refillkey.sh"
+    owner: "{{ jukebox__default_user }}"
+    group: "{{ jukebox__default_user }}"
+    mode: 0755
+  when:
+    - jukebox__configure
+    - jukebox__refill|default(False)
 
 - name: Configure user autologin
   lineinfile:
