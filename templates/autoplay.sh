@@ -3,6 +3,9 @@ set -eu
 {% if jukebox__autoplay_random|default(False) %}
 # Put some files for first playback
 
+# 0 - Check if media lib is present
+[ -d {{ jukebox__media_dir }} ] || exit -1
+
 # 1 - Run track adder
 /home/{{ jukebox__default_user }}/checkplaylist.sh
 

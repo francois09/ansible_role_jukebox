@@ -51,7 +51,7 @@ do
     SName=$(urldecode "${SName}")
     DName=$(printf "%04d" $INDEX)
     DName="/media/francois/${KEY_NAME}/${DName} - "$(echo ${SName}|sed -e 's/\// - /g')
-    SName="/var/lib/music/songs/$SName"
+    SName="{{ jukebox__media_dir }}/$SName"
     cp "$SName" "$DName"
     INDEX=$(($INDEX + 1))
 done
