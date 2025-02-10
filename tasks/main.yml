@@ -62,6 +62,21 @@
     state: restarted
   when: powermgmt_service is changed
 
+- name: disable pulseaudio service when headless
+  service:
+    name: pulseaudio.service
+    state: stopped
+    enabled: False
+  when:
+    - jukebox__headless
+
+# - name: disable pulseaudio socket when headless
+#   service:
+#     name: pulseaudio.socket
+#     enabled: False
+#   when:
+#     - jukebox__headless
+
 - name: Cancel splash rainbow /boot/config.txt
   lineinfile:
     path: /boot/config.txt
